@@ -4,7 +4,7 @@
 #define CLK 2
 #define DIO 3
 
-ezButton button(7, INPUT_PULLUP);  // create ezButton object that attaches to pin 7;
+ezButton button(7);  // create ezButton object that attaches to pin 7;
 
 unsigned long timer = 0;
 
@@ -23,7 +23,7 @@ void setup() {
   // serial plotter for testing
   Serial.begin(9600);
   
-  button.setDebounceTime(25); // set debounce time to 70 milliseconds
+  button.setDebounceTime(50); // set debounce time to 50 milliseconds
   button.setCountMode(COUNT_FALLING); // count when button state goes from HIGH to LOW
   
 }
@@ -45,7 +45,7 @@ void loop() {
   
   
 
-  unsigned long count = button.getCount(); // store button count
+  unsigned long count = button.getCount(); // store button pressed count
   
   if(button.isPressed()){
 
