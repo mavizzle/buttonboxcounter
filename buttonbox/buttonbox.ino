@@ -82,14 +82,20 @@ void loop() {
 
       Serial.println("final tapCount = " + String(tapCount));
       Serial.println("tapRate = " + String(tapRate / 100));
+
+      // display final result blinking effect
+      for(int i = 0; i < 3; i++) {
+        
+        display.showNumberDecEx(tapRate, 0b01000000, false, 4, 0);
+        delay(300);
+        display.clear();
+        delay(300);
+        
+      }
       
-      
-      delay(1500);
-      display.clear();
       inputTimer = 0;
       tapCount = 0;
-      
-      
+
     }
   }
 
@@ -100,7 +106,7 @@ void loop() {
   // set display brightness
   display.setBrightness(0x0f);
 
-  //display FLAP before tapcount is 0
+  //display LINE before tapcount is 0, and FLAP while 2 second timer is active
   if(tapCount == 0) {
     display.setSegments(LINE);
   } else {
