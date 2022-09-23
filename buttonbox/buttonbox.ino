@@ -1,13 +1,11 @@
-#include <ezButton.h>
+// display logic
+
 #include <TM1637Display.h>
 
 #define CLK 2
 #define DIO 3
 
-ezButton button(7);  // create ezButton object that attaches to pin 7;
-
-unsigned long timer = 0;
-
+// var to display the word 'FLAP' 
 const uint8_t FLAP[] = {
   SEG_A | SEG_E | SEG_F | SEG_G,                   // F
   SEG_D | SEG_E | SEG_F,                           // L
@@ -16,82 +14,100 @@ const uint8_t FLAP[] = {
   };
 
 
+// variable for displaying "----"
+const uint8_t LINE[] = {
+  SEG_G,                                           // G
+  SEG_G,                                           // G
+  SEG_G,                                           // G
+  SEG_G,                                           // G
+  };
+  
+
 TM1637Display display(CLK, DIO);
 
 
+
+// button logic
+
+const int button = 4;
+boolean buttonState = HIGH;
+int tapCount = 0;
+unsigned long debounce = 0;
+unsigned long inputTimer = 0;
+
+
+// SETUP
 void setup() {
-  // serial plotter for testing
+  // put your setup code here, to run once:
   Serial.begin(9600);
-  
-  button.setDebounceTime(50); // set debounce time to 50 milliseconds
-  button.setCountMode(COUNT_FALLING); // count when button state goes from HIGH to LOW
-  
+
+  //button mode INPUT_PULLUP to take advantage of internal resitor to force 'HIGH' state
+  pinMode(button, INPUT_PULLUP);
+    
 }
 
+
+
+// LOOP
 void loop() {
 
-  button.loop(); // MUST call the loop() function first
+  //debounce logic
+  if (debounce < millis()) {
+    
+    if(digitalRead(button) == LOW && buttonState == HIGH) {
+      tapCount++;
+      buttonState = LOW;
+      debounce = (millis() + 10);
+      
+      if (inputTimer == 0) {
+        inputTimer = (millis() + 2000);
+      }     
+      
+      
+      // for testing button taps/count in serial port
+//      Serial.println("buttonState = " + String(buttonState));
+      Serial.println("tapCount = " + String(tapCount));
+      
+    } else if (digitalRead(button) == HIGH && buttonState == LOW) {
+      buttonState = HIGH;
+      delay(10);
+    }
 
-  // set brightness
+    //tap rate results display logic
+    if ((inputTimer > 0) && (inputTimer < millis())) {
+      
+      float tapRate = ((int(tapCount) * 100) / 2);
+      
+      display.showNumberDecEx(tapRate, 0b01000000, false, 4, 0);
+
+      Serial.println("final tapCount = " + String(tapCount));
+      Serial.println("tapRate = " + String(tapRate / 100));
+      
+      
+      delay(1500);
+      display.clear();
+      inputTimer = 0;
+      tapCount = 0;
+      
+      
+    }
+  }
+
+
+  //display logic
+
+  
+  // set display brightness
   display.setBrightness(0x0f);
 
-  
-//  //display FLAP before timer is running
-  if(int(timer) == 0) {
+  //display FLAP before tapcount is 0
+  if(tapCount == 0) {
+    display.setSegments(LINE);
+  } else {
     display.setSegments(FLAP);
-  }
-  
- 
-  
-  
-
-  unsigned long count = button.getCount(); // store button pressed count
-  
-  if(button.isPressed()){
-
-    // print button presses to serial monitor
-    Serial.println("tap count:" + String(count));
-
-    // start 2 second timer window for recording taps
-    if(int(timer)==0) {
-      timer = (millis() + 2000);
-      display.clear();
-    }
+//    display.showNumberDec(int(tapCount));
   }
 
-   // display countdown while timer is running
-  if (timer > millis()) {
-    
-    int countDown = (int(timer) - int(millis()));
-    
-//    Serial.println(countDown);
-    display.showNumberDecEx(countDown, 0b10000000, false, 4, 1);
-  }
-
- 
-
-
   
-  // end of timer button taprate math & timer reset statement
-  if ((timer > 0) && (timer < millis())) {
-   
-    int tapRate = ((int(count) * 1000) / 20);
-
-    
-    Serial.println(float(tapRate) / 100); // show taprate in serial monitor
-
-    // show final taprate on number display
-
-    for (int i = 0; i < 3; i++) {
-      display.showNumberDecEx(tapRate, 0b01000000, false, 4, 0);
-      delay(300);
-      display.clear();
-      delay(300);
-    }
-    delay(300);
-    timer = 0;
-    button.resetCount();
-    
-  }
-
+  
 }
